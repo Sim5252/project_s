@@ -1,0 +1,68 @@
+name: Unity CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Run Unity Tests
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Cache Library
+      uses: actions/cache@v2
+      with:
+        path: Library
+        key: Library-${{ hashFiles('**/ProjectSettings/ProjectVersion.txt') }}
+        restore-keys: |
+          Library-
+    - name: Setup Unity
+      uses: game-ci/unity-action@v2
+      with:
+        unityVersion: '2020.3.11f1' # Replace this with your Unity version
+    - name: Run Unit Tests
+      uses: game-ci/unity-test-runner@v2
+      with:
+        projectPath: .
+        testMode: playmode
+        artifactsPath: ${{ github.workspace }}/artifacts
+    - name: Upload Test Results
+      uses: actions/upload-artifact@v2
+      if: always()
+      with:
+        name: Test Results
+        path: ${{ github.workspace }}/artifacts
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Cache Library
+      uses: actions/cache@v2
+      with:
+        path: Library
+        key: Library-${{ hashFiles('**/ProjectSettings/ProjectVersion.txt') }}
+        restore-keys: |
+          Library-
+    - name: Setup Unity
+      uses: game-ci/unity-action@v2
+      with:
+        unityVersion: '2020.3.11f1' # Replace this with your Unity version
+    - name: Build Project
+      uses: game-ci/unity-builder@v2
+      with:
+        projectPath: .
+        buildName: YourGameName
+        buildMethod: Your.Namespace.Class.Method
+        buildTarget: StandaloneWindows64 # Change this according to your target platform
+    - name: Upload Build
+      uses: actions/upload-artifact@v2
+      with:
+        name: Build
+        path: build
